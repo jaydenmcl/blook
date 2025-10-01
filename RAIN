@@ -1,6 +1,3 @@
--- GearSpawnerScript (Global Gear Rain + Boombox with Sequential Songs & Resizing)
--- Place in ServerScriptService
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -19,6 +16,8 @@ local BOOMBOX_ASSET_ID = 212641536 -- replace with your Boombox model asset ID
 -- Config
 local DROP_HEIGHT = 20
 local MAX_GEARS = 15 -- maximum gears to spawn per player
+local BOOMBOX_POSITION = Vector3.new(5.5, 0.5, 72)
+local BOOMBOX_SIZE = Vector3.new(58, 32, 16)
 
 -- Shuffle utility
 local function shuffle(tbl)
@@ -46,7 +45,10 @@ local function spawnGearsForPlayer(player)
     local hrp = player.Character.HumanoidRootPart
 
     local gearList = GearFolder:GetChildren()
-    if #gearList == 0 then return end
+    if #gearList == 0 then
+        warn("No gears found in GearTemplates! Error Code: 1101")
+        return
+    end
 
     local shuffledGears = shuffle(gearList)
     local spawnCount = math.min(MAX_GEARS, #shuffledGears)
@@ -75,6 +77,7 @@ local function spawnGearsForPlayer(player)
             end
         end)
     end
+    print("Gears spawned above player: " .. player.Name .. " Status Code: 2100")
 end
 
 -- Rain gears above all players in this server
@@ -84,33 +87,37 @@ local function rainAllPlayers()
     end
 end
 
--- Spawn boombox using asset ID, resize, and play two songs sequentially
+-- Spawn Boombox at specific position, resize, and play two songs sequentially
 local function spawnBoombox(assetId)
-    local spawnPart = Workspace:FindFirstChild("BoomBoxSpawn")
-    if not spawnPart then return end
-
     local success, assetModel = pcall(function()
         return InsertService:LoadAsset(assetId)
     end)
 
     if not success or not assetModel then
-        warn("Failed to load Boombox asset with ID:", assetId)
+        warn("Boombox failed to load! Error Code: 1001")
         return
     end
 
     local boomClone = assetModel:GetChildren()[1]
-    if not boomClone then return end
+    if not boomClone then
+        warn("Boombox model missing children! Error Code: 1002")
+        return
+    end
+
     boomClone.Parent = Workspace
 
-    -- Position above spawn part
+    -- Resize and position
     if boomClone.PrimaryPart then
-        boomClone:SetPrimaryPartCFrame(spawnPart.CFrame + Vector3.new(0, 4, 0))
-        boomClone.PrimaryPart.Size = Vector3.new(58, 32, 16)
+        boomClone.PrimaryPart.Size = BOOMBOX_SIZE
+        boomClone:SetPrimaryPartCFrame(CFrame.new(BOOMBOX_POSITION))
     else
         local firstPart = boomClone:FindFirstChildWhichIsA("BasePart")
         if firstPart then
-            firstPart.Size = Vector3.new(58, 32, 16)
-            boomClone:MoveTo(spawnPart.Position + Vector3.new(0, 4, 0))
+            firstPart.Size = BOOMBOX_SIZE
+            firstPart.Position = BOOMBOX_POSITION
+        else
+            warn("No BasePart found to position Boombox! Error Code: 1003")
+            return
         end
     end
 
@@ -124,12 +131,13 @@ local function spawnBoombox(assetId)
         sound:Destroy()
     end
 
-    -- Play songs sequentially
+    -- Play sequential songs
     playSong(142376088)
     playSong(16190782181)
 
-    -- Remove the Boombox after both songs
+    -- Remove Boombox after both songs
     boomClone:Destroy()
+    print("Boombox completed playback and removed! Status Code: 2000")
 end
 
 -- Global event listener
@@ -143,10 +151,10 @@ Players.PlayerAdded:Connect(function(player)
     player.Chatted:Connect(function(msg)
         if not isAdmin(player) then return end
 
-        local lowerMsg = msg:lower()
-        if lowerMsg == ";abuse" then
+        if msg:lower() == ";abuse" then
             -- Send global message to all servers
             MessagingService:PublishAsync("GearRainGlobal", true)
+            print("Admin triggered ;abuse command Status Code: 3000")
         end
     end)
 end)
