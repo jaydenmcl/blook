@@ -1,0 +1,54 @@
+-- Place this in ServerScriptService as a Script
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local InsertService = game:GetService("InsertService")
+
+-- Make sure GearTemplates folder exists
+local gearFolder = ReplicatedStorage:FindFirstChild("GearTemplates")
+if not gearFolder then
+    gearFolder = Instance.new("Folder")
+    gearFolder.Name = "GearTemplates"
+    gearFolder.Parent = ReplicatedStorage
+end
+
+-- List of asset IDs you want to load at startup
+
+local assetIds = {
+    121946387,
+    168141301,
+    306971294,
+    147143863,
+    56561579,
+    94794774,
+    93136746,
+    241511828,
+    1340206957,
+    130113146,
+    95354288,
+    88885539,
+    68848741,
+    71422361,
+    140490812,
+    67747912,
+    34870758,
+    80576952,
+    427949130,
+    119101539,
+}
+
+-- Load all assets into GearTemplates
+for _, assetId in ipairs(assetIds) do
+    local success, model = pcall(function()
+        return InsertService:LoadAsset(assetId)
+    end)
+
+    if success and model then
+        for _, item in pairs(model:GetChildren()) do
+            item.Parent = gearFolder
+        end
+        model:Destroy()
+        print("Loaded asset:", assetId, "into GearTemplates")
+    else
+        warn("Failed to load asset:", assetId)
+    end
+end
